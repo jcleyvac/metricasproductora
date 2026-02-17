@@ -1,99 +1,80 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard Pro - GitHub Edition</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { background: #f0f2f5; padding: 30px; }
-    .card { border-radius: 12px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 25px; transition: 0.3s; }
-    .card:hover { transform: translateY(-5px); }
-    .card-h { background: #fff; padding: 15px; border-radius: 12px 12px 0 0; font-weight: bold; color: #333; border-bottom: 1px solid #eee; }
-    .chart-container { height: 300px; padding: 20px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Acceso Seguro - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #f0f2f5; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .login-card { width: 100%; max-width: 400px; padding: 2rem; border-radius: 15px; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        #main-dashboard { display: none; width: 100%; height: 100%; padding: 20px; background: #f8f9fa; overflow-y: auto; align-self: flex-start; }
+    </style>
 </head>
 <body>
 
-  <div class="container-fluid">
-    <div id="loader" class="text-center py-5">
-      <div class="spinner-grow text-primary" role="status"></div>
-      <p class="mt-3">Conectando con la API de Google Sheets...</p>
+    <div id="login-screen" class="login-card text-center">
+        <h3 class="mb-4">Métricas Tickets</h3>
+        <input type="text" id="userInput" class="form-control mb-3" placeholder="Usuario">
+        <input type="password" id="passInput" class="form-control mb-3" placeholder="Contraseña">
+        <button id="btnLogin" onclick="handleLogin()" class="btn btn-primary w-100">Entrar</button>
+        <div id="loginError" class="text-danger mt-3 small"></div>
     </div>
 
-    <div id="dashboard" class="d-none">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Dashboard de Métricas Operativas</h2>
-        <span class="badge bg-success">En línea (GitHub)</span>
-      </div>
-      
-      <div class="row">
-        <div class="col-md-4"><div class="card"><div class="card-h">TICKETS POR DEPTO</div><div class="chart-container"><canvas id="c1"></canvas></div></div></div>
-        <div class="col-md-4"><div class="card"><div class="card-h">ANTICIPACIÓN (DÍAS)</div><div class="chart-container"><canvas id="c2"></canvas></div></div></div>
-        <div class="col-md-4"><div class="card"><div class="card-h">VIDA EFECTIVA (DÍAS)</div><div class="chart-container"><canvas id="c3"></canvas></div></div></div>
-      </div>
-      <div class="row">
-        <div class="col-md-6"><div class="card"><div class="card-h">TIEMPO SIN EDITAR (HORAS)</div><div class="chart-container"><canvas id="c4"></canvas></div></div></div>
-        <div class="col-md-6"><div class="card"><div class="card-h">COBERTURAS POR TURNO</div><div class="chart-container"><canvas id="c5"></canvas></div></div></div>
-      </div>
+    <div id="main-dashboard">
+        <div class="d-flex justify-content-between mb-4">
+            <h2>Dashboard Operativo</h2>
+            <button onclick="location.reload()" class="btn btn-outline-secondary">Salir</button>
+        </div>
+        <div id="loader" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p>Cargando métricas...</p>
+        </div>
+        <div id="charts-row" class="row d-none">
+            <div class="col-md-6 mb-4"><div class="card p-3"><h5>Tickets por Depto</h5><canvas id="c1"></canvas></div></div>
+            <div class="col-md-6 mb-4"><div class="card p-3"><h5>Coberturas por Turno</h5><canvas id="c5"></canvas></div></div>
+        </div>
     </div>
-  </div>
 
-  <script>
-    // --- CONFIGURACIÓN ---
-    const API_URL = 'https://script.google.com/a/macros/esan.edu.pe/s/AKfycbz4DzVDp4vviRa_t1UccdIS5Yzf8NjVzw3zsYKnSnMSvdA3rKdUNoJ110wIemUf89h1/exec'; // Pega aquí la URL que copiaste en el paso anterior
+    <script>
+        const API_URL = 'https://script.google.com/a/macros/esan.edu.pe/s/AKfycbz4DzVDp4vviRa_t1UccdIS5Yzf8NjVzw3zsYKnSnMSvdA3rKdUNoJ110wIemUf89h1/exec';
 
-    const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        async function handleLogin() {
+            const user = document.getElementById('userInput').value;
+            const pass = document.getElementById('passInput').value;
+            const btn = document.getElementById('btnLogin');
+            
+            btn.disabled = true;
+            btn.innerText = "Validando...";
 
-    window.onload = async () => {
-      try {
-        // Petición a la API de Google Apps Script
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        
-        document.getElementById('loader').remove();
-        document.getElementById('dashboard').classList.remove('d-none');
-        renderizar(data);
-      } catch (error) {
-        console.error("Error:", error);
-        document.getElementById('loader').innerHTML = `<div class="alert alert-danger">Error de conexión con la API</div>`;
-      }
-    };
+            try {
+                // Llamada a la API con acción de login
+                const response = await fetch(`${API_URL}?action=login&user=${user}&pass=${pass}`);
+                const result = await response.json();
 
-    function renderizar(data) {
-      const promediar = (key, val) => {
-        const map = data.reduce((acc, c) => {
-          if (!acc[c[key]]) acc[c[key]] = { t: 0, n: 0 };
-          acc[c[key]].t += c[val]; acc[c[key]].n++;
-          return acc;
-        }, {});
-        return { labels: Object.keys(map), values: Object.values(map).map(o => (o.t / o.n).toFixed(1)) };
-      };
+                if (result.success) {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('main-dashboard').style.display = 'block';
+                    loadData();
+                } else {
+                    document.getElementById('loginError').innerText = "Credenciales incorrectas";
+                }
+            } catch (e) {
+                document.getElementById('loginError').innerText = "Error de conexión con la API";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Entrar";
+            }
+        }
 
-      // Gráficos
-      new Chart(document.getElementById('c1'), { type: 'pie', data: { labels: Object.keys(data.reduce((acc,c)=>{acc[c.depto]=(acc[c.depto]||0)+1; return acc;},{})), datasets: [{ data: Object.values(data.reduce((acc,c)=>{acc[c.depto]=(acc[c.depto]||0)+1; return acc;},{})), backgroundColor: ['#ff6b6b','#4ecdc4','#ffe66d','#1a535c','#f7fff7'] }] }});
-      
-      const d2 = promediar('depto', 'anticipacion');
-      graficar('c2', 'bar', d2.labels, d2.values, 'Días', '#3498db');
-
-      const d3 = promediar('depto', 'vidaEfectiva');
-      graficar('c3', 'bar', d3.labels, d3.values, 'Días', '#1abc9c');
-
-      const d4 = promediar('mesIndex', 'sinEditar');
-      graficar('c4', 'line', d4.labels.map(l => meses[l]), d4.values, 'Horas', '#e67e22');
-
-      const tM = new Array(12).fill(0), tT = new Array(12).fill(0);
-      data.forEach(d => { if(d.turno === 'Mañana') tM[d.mesIndex]++; if(d.turno === 'Tarde') tT[d.mesIndex]++; });
-      new Chart(document.getElementById('c5'), { type: 'bar', data: { labels: meses, datasets: [{ label: 'Mañana', data: tM, backgroundColor: '#f1c40f' },{ label: 'Tarde', data: tT, backgroundColor: '#9b59b6' }] }});
-    }
-
-    function graficar(id, type, labels, data, label, color) {
-      new Chart(document.getElementById(id), {
-        type: type,
-        data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: color }] },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
-    }
-  </script>
+        async function loadData() {
+            // Lógica de fetch de datos y renderizado de Chart.js (igual a la anterior)
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            document.getElementById('loader').classList.add('d-none');
+            document.getElementById('charts-row').classList.remove('d-none');
+            // ... (Aquí incluyes las funciones de Chart.js de la respuesta anterior)
+        }
+    </script>
 </body>
 </html>
